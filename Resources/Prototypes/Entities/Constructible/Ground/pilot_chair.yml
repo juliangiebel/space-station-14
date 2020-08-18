@@ -1,4 +1,4 @@
-- type: entity
+﻿- type: entity
   name: pilot chair
   description: The driver seat of a prestigious battle cruiser.
   id: PilotSeatChair
@@ -17,6 +17,33 @@
   - type: Destructible
     maxHP: 100
   - type: Physics
+  - type: Input
+    context: "common"
   - type: ShuttleController
+  - type: Strap
+    position: Stand
+
+- type: entity
+  name: new pilot chair
+  description: The driver seat of a prestigious battle cruiser.
+  id: NewPilotSeatChair
+  components:
+  - type: Sprite
+    sprite: Constructible/Misc/furniture.rsi
+    state: chair
+    color: "#8e9799"
+  - type: Icon
+    sprite: Constructible/Misc/furniture.rsi
+    state: chair
+  - type: Collidable
+  - type: Clickable
+  - type: InteractionOutline
+  - type: Damageable
+  - type: Destructible
+    maxHP: 100
+  - type: Physics
+  - type: Input
+    context: "common"
+  - type: ShipController
   - type: Strap
     position: Stand
