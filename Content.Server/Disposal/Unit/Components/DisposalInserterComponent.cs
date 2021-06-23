@@ -1,0 +1,119 @@
+
+using Content.Server.Atmos;
+using Content.Shared.Verbs;
+using Robust.Shared.Containers;
+using Robust.Shared.GameObjects;
+using Robust.Shared.Serialization.Manager.Attributes;
+using Robust.Shared.ViewVariables;
+using System;
+
+namespace Content.Server.Disposal.Unit.Components
+{
+    public class DisposalInserterComponent : Component
+    {
+        public override string Name => "DisposalInserter";
+
+        /// <summary>
+        ///     The delay for an entity trying to move out of this inserter.
+        /// </summary>
+        [ViewVariables]
+        [DataField("exitAttemptDelay")]
+        public TimeSpan ExitAttemptDelay = TimeSpan.FromSeconds(0.5);
+
+        /// <summary>
+        ///     The delay for an entity trying to move into this inserter.
+        /// </summary>
+        [ViewVariables]
+        [DataField("entryDelay")]
+        public float EntryDelay = 0.5f;
+
+        /// <summary>
+        /// The time it takes until the inserter engages itself after an entity was inserted
+        /// </summary>
+        [ViewVariables(VVAccess.ReadWrite)]
+        [DataField("engageTime")]
+        public TimeSpan AutomaticEngageTime;
+
+        [ViewVariables(VVAccess.ReadWrite)]
+        [DataField("flushDelay")]
+        public TimeSpan FlushDelay;
+
+        /// <summary>
+        ///     The engage pressure of this inserter.
+        ///     Prevents it from flushing if the air pressure inside it is not equal to or bigger than this.
+        /// </summary>
+        [ViewVariables(VVAccess.ReadWrite)]
+        [DataField("engagePressure")]
+        public float EngagePressure;
+
+        /// <summary>
+        /// The rate at wich the the inserter fills up with the surrounding atmosphere
+        /// </summary>
+        [ViewVariables(VVAccess.ReadWrite)]
+        [DataField("pumpRate")]
+        public int PumpRate;
+
+        [ViewVariables]
+        public Container Container = default!;
+
+        [ViewVariables]
+        public GasMixture Air = default!;
+
+        [ViewVariables]
+        public bool Engaged;
+
+
+        public bool Pressurized = false;
+        //public bool ManualFlushReady = false;
+        public bool QueuedFlush = false;
+        public bool Flush = false;
+
+        #region Verbs
+        /*[Verb]
+        private sealed class SelfInsertVerb : Verb<EntityInputComponent>
+        {
+            protected override void GetData(IEntity user, EntityInputComponent component, VerbData data)
+            {
+                data.Visibility = VerbVisibility.Invisible;
+
+                if (!ActionBlockerSystem.CanInteract(user) ||
+                    component.ContainedEntities.Contains(user))
+                {
+                    return;
+                }
+
+                data.Visibility = VerbVisibility.Visible;
+                data.Text = Loc.GetString("Jump inside");
+            }
+
+            protected override void Activate(IEntity user, EntityInputComponent component)
+            {
+                _ = component.TryInsert(user, user);
+            }
+        }
+
+        [Verb]
+        private sealed class EjectContentsVerb : Verb<EntityInputComponent>
+        {
+            protected override void GetData(IEntity user, EntityInputComponent component, VerbData data)
+            {
+                data.Visibility = VerbVisibility.Invisible;
+
+                if (!ActionBlockerSystem.CanInteract(user) ||
+                    component.ContainedEntities.Contains(user))
+                {
+                    return;
+                }
+
+                data.Visibility = VerbVisibility.Visible;
+                data.Text = Loc.GetString("Eject contents");
+            }
+
+            protected override void Activate(IEntity user, EntityInputComponent component)
+            {
+                component.TryEjectContents();
+            }
+        }*/
+        #endregion
+    }
+}
