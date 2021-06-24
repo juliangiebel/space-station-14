@@ -1,5 +1,7 @@
 
 using Content.Server.Atmos;
+using Content.Shared.Atmos;
+using Content.Shared.Disposal.Components;
 using Content.Shared.Verbs;
 using Robust.Shared.Containers;
 using Robust.Shared.GameObjects;
@@ -9,10 +11,9 @@ using System;
 
 namespace Content.Server.Disposal.Unit.Components
 {
-    public class DisposalInserterComponent : Component
+    [RegisterComponent]
+    public class DisposalInserterComponent : SharedDisposalInserterComponent
     {
-        public override string Name => "DisposalInserter";
-
         /// <summary>
         ///     The delay for an entity trying to move out of this inserter.
         /// </summary>
@@ -23,20 +24,27 @@ namespace Content.Server.Disposal.Unit.Components
         /// <summary>
         ///     The delay for an entity trying to move into this inserter.
         /// </summary>
-        [ViewVariables]
+        [ViewVariables(VVAccess.ReadWrite)]
         [DataField("entryDelay")]
         public float EntryDelay = 0.5f;
+
+        /// <summary>
+        ///     Delay from trying to shove someone else into disposals.
+        /// </summary>
+        [ViewVariables(VVAccess.ReadWrite)]
+        [DataField("draggedEntryDelay")]
+        public float DraggedEntryDelay = 0.5f;
 
         /// <summary>
         /// The time it takes until the inserter engages itself after an entity was inserted
         /// </summary>
         [ViewVariables(VVAccess.ReadWrite)]
         [DataField("engageTime")]
-        public TimeSpan AutomaticEngageTime;
+        public TimeSpan AutomaticEngageTime = TimeSpan.FromSeconds(30);
 
         [ViewVariables(VVAccess.ReadWrite)]
         [DataField("flushDelay")]
-        public TimeSpan FlushDelay;
+        public TimeSpan FlushDelay = TimeSpan.FromSeconds(3);
 
         /// <summary>
         ///     The engage pressure of this inserter.
@@ -44,24 +52,26 @@ namespace Content.Server.Disposal.Unit.Components
         /// </summary>
         [ViewVariables(VVAccess.ReadWrite)]
         [DataField("engagePressure")]
-        public float EngagePressure;
+        public float EngagePressure = 101.0f;
 
         /// <summary>
         /// The rate at wich the the inserter fills up with the surrounding atmosphere
         /// </summary>
         [ViewVariables(VVAccess.ReadWrite)]
         [DataField("pumpRate")]
-        public int PumpRate;
+        public int PumpRate = 1;
 
         [ViewVariables]
         public Container Container = default!;
 
         [ViewVariables]
-        public GasMixture Air = default!;
+        [DataField("air")]
+        public GasMixture Air = new GasMixture(Atmospherics.CellVolume / 2);
 
         [ViewVariables]
         public bool Engaged;
 
+        public TimeSpan LastExitAttempt;
 
         public bool Pressurized = false;
         //public bool ManualFlushReady = false;
