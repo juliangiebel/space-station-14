@@ -34,6 +34,7 @@ namespace Content.Client.Entry
             "Dice",
             "PaperLabel",
             "Construction",
+            "Radioactive",
             "PoweredLight",
             "Smes",
             "LightBulb",
