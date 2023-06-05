@@ -1,7 +1,6 @@
 meta:
   format: 5
   postmapinit: false
-
 tilemap:
   0: Space
   1: FloorArcadeBlue
