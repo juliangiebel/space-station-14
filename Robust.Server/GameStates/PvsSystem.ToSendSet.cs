@@ -24,7 +24,7 @@ internal sealed partial class PvsSystem
     }
 
     /// <summary>
-    /// A chunks that is visible to a player and add entities to the game-state.
+    /// Add all entities on a given PVS chunk to a clients game-state.
     /// </summary>
     private void AddPvsChunk(PvsChunk chunk, float distance, PvsSession session)
     {
@@ -48,15 +48,28 @@ internal sealed partial class PvsSystem
         // We add chunk-size here so that its consistent with the normal PVS range setting.
         // I.e., distance here is the Chebyshev distance to the centre of each chunk, but the normal pvs range only
         // required that the chunk be touching the box, not the centre.
-        var count = distance < (_lowLodDistance + ChunkSize)/2
+        var limit = distance < (_lowLodDistance + ChunkSize) / 2
             ? chunk.Contents.Count
             : chunk.LodCounts[0];
 
+        // If the PVS budget is exceeded, it should still be safe to send all of the chunk's direct children, though
+        // after that we have no guarantee that an entity's parent got sent.
+        var directChildren = Math.Min(limit, chunk.LodCounts[2]);
+
         // Send entities on the chunk.
-        foreach (ref var ent in CollectionsMarshal.AsSpan(chunk.Contents))
+        var span = CollectionsMarshal.AsSpan(chunk.Contents);
+        for (var i = 0; i < limit; i++)
         {
-            if ((mask & ent.Comp.VisibilityMask) == ent.Comp.VisibilityMask)
-                AddEntity(session, ent, fromTick);
+            var ent = span[i];
+            if ((mask & ent.Comp.VisibilityMask) != ent.Comp.VisibilityMask)
+                continue;
+
+            // TODO PVS improve this somehow
+            // Having entities "leave" pvs view just because the pvs entry budget was exceeded sucks.
+            // This probably requires changing client game state manager to support receiving entities with unknown parents.
+            // Probably needs to do something similar to pending net entity states, but for entity spawning.
+            if (!AddEntity(session, ent, fromTick))
+                limit = directChildren;
         }
     }
 
@@ -118,18 +131,18 @@ internal sealed partial class PvsSystem
         // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         if (meta == null)
         {
-            Log.Error($"Encountered null metadata in EntityData. Entity: {ToPrettyString(entity.Owner)}");
+            Log.Error($"Encountered null metadata in EntityData. Entity: {ToPrettyString(uid)}");
             return false;
         }
 
         if (meta.EntityLifeStage >= EntityLifeStage.Terminating)
         {
             var rep = new EntityStringRepresentation(entity);
-            Log.Error($"Attempted to add a deleted entity to PVS send set: '{rep}'. Deletion queued: {EntityManager.IsQueuedForDeletion(entity)}. Trace:\n{Environment.StackTrace}");
+            Log.Error($"Attempted to add a deleted entity to PVS send set: '{rep}'. Deletion queued: {EntityManager.IsQueuedForDeletion(uid)}. Trace:\n{Environment.StackTrace}");
 
             // This can happen if some entity was some removed from it's parent while that parent was being deleted.
             // As a result the entity was marked for deletion but was never actually properly deleted.
-            EntityManager.QueueDeleteEntity(entity);
+            EntityManager.QueueDeleteEntity(uid);
             return false;
         }
 
@@ -152,10 +165,7 @@ internal sealed partial class PvsSystem
         }
 
         if (meta.EntityLastModifiedTick <= fromTick)
-        {
-            //entity has been sent before and hasn't been updated since
             return true;
-        }
 
         state = GetEntityState(session.Session, uid, fromTick , meta);
 

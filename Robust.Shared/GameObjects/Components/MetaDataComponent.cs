@@ -173,7 +173,7 @@ namespace Robust.Shared.GameObjects
         ///     Every entity will always have the first bit set to true.
         /// </remarks>
         [ViewVariables] // TODO ACCESS RRestrict writing to server-side visibility system
-        public int VisibilityMask { get; internal set; }= 1;
+        public ushort VisibilityMask { get; internal set; }= 1;
 
         [ViewVariables]
         public bool EntityPaused => PauseTime != null;
@@ -192,8 +192,7 @@ namespace Robust.Shared.GameObjects
         [ViewVariables]
         internal PvsChunkLocation? LastPvsLocation;
 
-        [Obsolete("Do not use from content")]
-        public override void ClearTicks()
+        private protected override void ClearTicks()
         {
             // Do not clear modified ticks.
             // MetaDataComponent is used in the game state system to carry initial data like prototype ID.

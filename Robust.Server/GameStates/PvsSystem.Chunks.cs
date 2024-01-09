@@ -59,7 +59,9 @@ internal sealed partial class PvsSystem
     /// </summary>
     private void UpdateChunkPosition(PvsChunk chunk)
     {
-        if (chunk.Root.Comp.EntityLifeStage >= EntityLifeStage.Terminating
+        if (chunk.Root.Comp == null
+            || chunk.Map.Comp == null
+            || chunk.Root.Comp.EntityLifeStage >= EntityLifeStage.Terminating
             || chunk.Map.Comp.EntityLifeStage >= EntityLifeStage.Terminating)
         {
             Log.Error($"Encountered deleted root while updating pvs chunk positions. Root: {ToPrettyString(chunk.Root, chunk.Root)}. Map: {ToPrettyString(chunk.Map, chunk.Map)}" );
@@ -77,33 +79,25 @@ internal sealed partial class PvsSystem
     /// <summary>
     /// Update the list of all currently visible chunks.
     /// </summary>
-    internal void GetVisibleChunks(ICommonSession[] sessions)
+    internal void GetVisibleChunks()
     {
         using var _= Histogram.WithLabels("Get Chunks").NewTimer();
-
-        // TODO PVS try parallelize
-        // I.e., get the per-player List<PvsChunk> in parallel.
-        // Then, add them together into a single (unique) List on the main thread
-        // However, I'm not sure if this would actually be any faster with parallel overhead.
-        // Per-player chunk enumeration should be reasonably fast? But its still a few component lookups and O(N^2)
-        // dictionary lookups per player, where N ~ pvs size.
 
         DebugTools.Assert(!_chunks.Values.Any(x=> x.UpdateQueued));
         _dirtyChunks.Clear();
         _cleanChunks.Clear();
-        foreach (var session in sessions)
+        foreach (var session in _sessions)
         {
-            var data = GetOrNewPvsSession(session);
-            data.Chunks.Clear();
-            GetSessionViewers(data);
+            session.Chunks.Clear();
+            GetSessionViewers(session);
 
-            foreach (var eye in data.Viewers)
+            foreach (var eye in session.Viewers)
             {
-                GetVisibleChunks(eye, data.Chunks);
+                GetVisibleChunks(eye, session.Chunks);
             }
 
             // The list of visible chunks should be unique.
-            DebugTools.Assert(data.Chunks.Select(x => x.Chunk).ToHashSet().Count == data.Chunks.Count);
+            DebugTools.Assert(session.Chunks.Select(x => x.Chunk).ToHashSet().Count == session.Chunks.Count);
         }
         DebugTools.Assert(_dirtyChunks.ToHashSet().Count == _dirtyChunks.Count);
         DebugTools.Assert(_cleanChunks.ToHashSet().Count == _cleanChunks.Count);
@@ -211,8 +205,13 @@ internal sealed partial class PvsSystem
 
     private void ProcessVisibleChunks()
     {
-        using var _= Histogram.WithLabels("Update Chunks").NewTimer();
-        _parallelMgr.ProcessNow(_chunkJob, _chunkJob.Count);
+        using var _= Histogram.WithLabels("Update Chunks & Overrides").NewTimer();
+        var task = _parallelMgr.Process(_chunkJob, _chunkJob.Count);
+
+        UpdateCleanChunks();
+        CacheGlobalOverrides();
+
+        task.WaitOne();
     }
 
     /// <summary>
@@ -220,12 +219,12 @@ internal sealed partial class PvsSystem
     /// </summary>
     internal void ProcessVisibleChunksSequential()
     {
-        UpdateCleanChunks();
-
         for (var i = 0; i < _dirtyChunks.Count; i++)
         {
             UpdateDirtyChunks(i);
         }
+        UpdateCleanChunks();
+        CacheGlobalOverrides();
     }
 
     /// <summary>
@@ -238,7 +237,15 @@ internal sealed partial class PvsSystem
         if (!existing)
         {
             chunk = _chunkPool.Get();
-            chunk.Initialize(location, _metaQuery, _xformQuery);
+            try
+            {
+                chunk.Initialize(location, _metaQuery, _xformQuery);
+            }
+            catch (Exception e)
+            {
+                _chunks.Remove(location);
+                throw;
+            }
             _chunkSets.GetOrNew(location.Uid).Add(location);
         }
 
@@ -278,6 +285,17 @@ internal sealed partial class PvsSystem
     {
         if (_chunks.TryGetValue(location, out var chunk))
             chunk.MarkDirty();
+    }
+
+    /// <summary>
+    /// Mark all chunks as dirty.
+    /// </summary>
+    private void DirtyAllChunks()
+    {
+        foreach (var chunk in _chunks.Values)
+        {
+            chunk.MarkDirty();
+        }
     }
 
     private void OnGridRemoved(GridRemovalEvent ev)
