@@ -124,8 +124,12 @@ namespace Content.MapRenderer
 
                 var mapViewerData = new MapViewerData
                 {
-                    Id = map,
-                    Name = Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(map)
+                    // The id used by the mapserver to identify the map.
+                    // Stripping the file extension in case the -f flag is used.
+                    // This won't prevent issues in case the actual map id is different from the file name
+                    // but the mapserver generally only calls the maprenderer using the -f flag.
+                    Id = Path.GetFileNameWithoutExtension(map),
+                    Name = Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(map),
                 };
 
                 mapViewerData.ParallaxLayers.Add(LayerGroup.DefaultParallax());
