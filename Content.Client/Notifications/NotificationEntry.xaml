@@ -1,0 +1,39 @@
+﻿<controls:NotificationEntry
+    xmlns="https://spacestation14.io"
+    xmlns:controls="clr-namespace:Content.Client.Notifications"
+    xmlns:controls1="clr-namespace:Content.Client.UserInterface.Controls"
+    xmlns:system="clr-namespace:System;assembly=System.Runtime"
+    xmlns:graphics="clr-namespace:Robust.Client.Graphics;assembly=Robust.Client"
+    MinHeight="100">
+    <PanelContainer StyleClasses="AngleRect" ModulateSelfOverride="#2b2b31"/>
+    <BoxContainer Orientation="Vertical">
+        <BoxContainer Orientation="Vertical" >
+            <Control HorizontalExpand="True" SetHeight="27">
+                <PanelContainer StyleClasses="DefaultBorderBottom"/>
+                <Label Name="TitleLabel" Text="Test Survey" HorizontalAlignment="Left" Margin="12 0 6 0"/>
+            </Control>
+        </BoxContainer>
+        <RichTextLabel Name="MessageLabel" StyleClasses="LabelLight" Margin="12 4 12 8" Text="Help us improve! Take this quick survey to share your thoughts and feedback about the game.
+Your input helps shape future updates – thank you for playing" VerticalExpand="True"/>
+        <Control HorizontalExpand="True">
+            <PanelContainer StyleClasses="DefaultBorderTop"/>
+            <BoxContainer Orientation="Horizontal" HorizontalExpand="True">
+                <Label FontColorOverride="#b1b1b2" StyleClasses="LabelSmall" Name="TypeLabel" Text="Survey" Margin="14 6 6 6"/>
+                <Control HorizontalExpand="True"/>
+                <controls1:ConfirmButton Text="Dismiss" MinWidth="80" SetHeight="22">
+                    <Button.StyleClasses>
+                        <system:String>ButtonColorRed</system:String>
+                        <system:String>ButtonSmall</system:String>
+                        <!--<system:String>OpenRight</system:String>-->
+                    </Button.StyleClasses>
+                </controls1:ConfirmButton>
+                <Button Text="Open" MinWidth="80" SetHeight="22" Margin="8 6 14 6">
+                    <Button.StyleClasses>
+                        <system:String>ButtonSmall</system:String>
+                        <!--<system:String>OpenLeft</system:String>-->
+                    </Button.StyleClasses>
+                </Button>
+            </BoxContainer>
+        </Control>
+    </BoxContainer>
+</controls:NotificationEntry>

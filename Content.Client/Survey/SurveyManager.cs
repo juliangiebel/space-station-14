@@ -45,6 +45,7 @@ public sealed class SurveyManager
         if (!_popupContainer.Disposed)
         {
             foreach (var popup in _surveyPopups.Values)
+
             {
                 popup.Orphan();
             }

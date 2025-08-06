@@ -237,6 +237,9 @@ binds:
 - function: OpenGuidebook
   type: State
   key: NumpadNum0
+- function: OpenNotifications
+  type: State
+  key: N
 - function: OpenAHelp
   type: State
   key: F1
